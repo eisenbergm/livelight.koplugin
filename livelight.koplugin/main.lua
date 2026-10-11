@@ -12,6 +12,12 @@ touch zones that are ordered ahead of the reader's and of the Gestures
 plugin's. Nothing in those is changed; anything that is not such a slide is
 passed on to them untouched, and turning this plugin off hands the edges back.
 
+Outside a book that is not enough: the file browser, History, Collections and
+other full-screen lists are all built on KOReader's Menu widget, which
+swallows every pan before any touch zone sees it (and does nothing with it,
+unless it came from a mouse wheel). So the plugin also wraps Menu's three
+gesture handlers, and offers each pan to the same code first.
+
 While sliding, a small box shows the level. Only the number in it is redrawn
 with the screen's fast black-and-white mode, a few times a second at most;
 the word beside it is drawn once, cleanly, and the number is redrawn cleanly
@@ -24,10 +30,12 @@ local Device = require("device")
 local Font = require("ui/font")
 local FrameContainer = require("ui/widget/container/framecontainer")
 local Geom = require("ui/geometry")
+local GestureRange = require("ui/gesturerange")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan = require("ui/widget/horizontalspan")
 local LeftContainer = require("ui/widget/container/leftcontainer")
 local Math = require("optmath")
+local Menu = require("ui/widget/menu")
 local Size = require("ui/size")
 local TextWidget = require("ui/widget/textwidget")
 local UIManager = require("ui/uimanager")
@@ -57,6 +65,9 @@ local DRAW_INTERVAL = 0.15
 -- redrawn cleanly.
 local SMOOTH_AFTER = 0.2
 local HIDE_AFTER = 1
+-- A slide whose lift is never reported (a second finger joined, or the screen
+-- underneath changed) is wound up after this long without news of it.
+local GIVE_UP_AFTER = 5
 
 local function settings()
     local stored = G_reader_settings:readSetting(SETTINGS_KEY)
@@ -241,6 +252,8 @@ local function drawBoxSoon()
     drawBoxFast()
 end
 
+local finish
+
 local function begin(key, control, y)
     local powerd = Device:getPowerDevice()
     local min, max = control.range(powerd)
@@ -280,7 +293,8 @@ local function moveTo(y)
     drawBoxSoon()
 end
 
-local function finish()
+finish = function()
+    UIManager:unschedule(finish)
     if not slide then return end
     slide = nil
     -- As KOReader's own gesture does, so waking from sleep restores this state.
@@ -300,6 +314,7 @@ end
 
 local function abandon()
     slide, passed_on = nil, nil
+    UIManager:unschedule(finish)
     UIManager:unschedule(releaseDraw)
     UIManager:unschedule(smoothNumber)
     UIManager:unschedule(hideBox)
@@ -333,6 +348,8 @@ local function onPan(ges)
         begin(key, control, ges.pos.y)
     end
     moveTo(ges.pos.y)
+    UIManager:unschedule(finish)
+    UIManager:scheduleIn(GIVE_UP_AFTER, finish)
     return true
 end
 
@@ -363,6 +380,52 @@ local function onSwipe(ges)
     moveTo(ges.end_pos.y)
     finish()
     return true
+end
+
+-- ── Full-screen lists ───────────────────────────────────────────────────────
+-- Wrapped once, for every Menu there is or will be. Each wrapper falls back to
+-- the original handler for anything that is not an edge slide.
+
+if not Menu._livelight_wrapped then
+    Menu._livelight_wrapped = true
+
+    -- Pop-up menus are narrower than the screen and are left alone.
+    local function fillsScreen(menu)
+        return menu.dimen ~= nil and menu.dimen.w == Screen:getWidth()
+    end
+
+    local menuOnPan = Menu.onPan
+    function Menu:onPan(arg, ges)
+        if fillsScreen(self) and not ges.mousewheel_direction and ges.start_pos and onPan(ges) then
+            -- Menu does not listen for a finger lifting, and outside the file
+            -- browser nothing else would hear it either.
+            if not self.ges_events.LiveLightRelease then
+                self.ges_events.LiveLightRelease = {
+                    GestureRange:new{ ges = "pan_release", range = self.dimen },
+                }
+            end
+            return true
+        end
+        return menuOnPan(self, arg, ges)
+    end
+
+    function Menu:onLiveLightRelease(arg, ges)
+        return onPanRelease(ges)
+    end
+
+    -- Without these, lifting at the end of a quick slide downwards would also
+    -- close the list, which is what a downward swipe means to a Menu.
+    local menuOnSwipe = Menu.onSwipe
+    function Menu:onSwipe(arg, ges)
+        if slide then return onSwipe(ges) end
+        return menuOnSwipe(self, arg, ges)
+    end
+
+    local menuOnMultiSwipe = Menu.onMultiSwipe
+    function Menu:onMultiSwipe(arg, ges)
+        if slide then return onSwipe(ges) end
+        return menuOnMultiSwipe(self, arg, ges)
+    end
 end
 
 -- ── Plugin ──────────────────────────────────────────────────────────────────

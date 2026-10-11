@@ -53,7 +53,16 @@ local function widgetClass()
     cls.free = function() end
     return cls
 end
+-- KOReader's list widget, as far as gestures go: it swallows every pan, and a
+-- downward swipe closes it.
+local menu_log = {}
+local MenuStub = {}
+function MenuStub:onPan(arg, ges) menu_log[#menu_log + 1] = ges.mousewheel_direction and "wheel" or "pan"; return true end
+function MenuStub:onSwipe(arg, ges) menu_log[#menu_log + 1] = ges.direction == "south" and "closed" or "swipe" end
+function MenuStub:onMultiSwipe(arg, ges) menu_log[#menu_log + 1] = "closed"; return true end
 local stubs = {
+    ["ui/widget/menu"] = MenuStub,
+    ["ui/gesturerange"] = { new = function(_, o) return o end },
     ["gettext"] = function(s) return s end,
     ["ffi/blitbuffer"] = { COLOR_WHITE = 1 },
     ["ffi/util"] = { template = function(str, ...)
@@ -425,6 +434,129 @@ do
     sub[2].callback(); check("box toggle saved", settings.livelight.show_level == false); sub[2].callback()
     sub[1].callback(); check("main toggle saved; box toggle greyed out with it", settings.livelight.enabled == false and sub[2].enabled_func() == false)
     sub[1].callback(); check("and back on", settings.livelight.enabled == true and sub[2].enabled_func() == true)
+end
+
+-- A list on screen. Events reach it the way KOReader delivers them: pans to
+-- onPan, the lift to whichever of its ges_events matches, else onwards (to the
+-- file browser's zones when it is the file browser's own list, nowhere otherwise).
+local function newList(width, in_file_browser)
+    local list = setmetatable({ dimen = { w = width, h = H }, ges_events = {} }, { __index = MenuStub })
+    function list:pan(x, y)
+        finger.x, finger.y = x, y
+        return self:onPan(nil, {
+            ges = "pan",
+            start_pos = { x = finger.x0, y = finger.y0 },
+            pos = { x = x, y = y },
+            relative = { x = x - finger.x0, y = y - finger.y0 },
+        })
+    end
+    function list:slide(x, y, pause)
+        local steps = math.max(1, math.floor(math.max(math.abs(y - finger.y), math.abs(x - finger.x)) / 10))
+        local fx, fy = finger.x, finger.y
+        for i = 1, steps do
+            self:pan(fx + (x - fx) * i / steps, fy + (y - fy) * i / steps)
+            advance(pause or 0.01)
+        end
+    end
+    function list:lift()
+        local ev = { ges = "pan_release", pos = { x = finger.x, y = finger.y } }
+        for name, ranges in pairs(self.ges_events) do
+            if ranges[1].ges == "pan_release" and self["on" .. name](self, nil, ev) then return "list" end
+        end
+        if in_file_browser and zones.pan_release.handler(ev) then return "zone" end
+        return "nobody"
+    end
+    function list:flick(kind)
+        local ev = { ges = kind or "swipe", pos = { x = finger.x0, y = finger.y0 }, end_pos = { x = finger.x, y = finger.y }, direction = direction() }
+        if in_file_browser then return zones[ev.ges].handler(ev) end -- its list leaves swipes to the zones
+        if ev.ges == "swipe" then return self:onSwipe(nil, ev) end
+        return self:onMultiSwipe(nil, ev)
+    end
+    return list
+end
+local function freshList(case, width, in_file_browser)
+    fresh(case)
+    menu_log = {}
+    return newList(width or W, in_file_browser)
+end
+do
+    local list = freshList("file browser: brightness follows the finger there too", W, true)
+    down(LEFT, 1000)
+    list:slide(LEFT, 930)
+    local base = powerd.fl_intensity
+    check("light already changing a short way in, finger still down", base > 40, base)
+    list:slide(LEFT, 930 - FULL * 0.2)
+    check("a fifth of the travel further is +20", powerd.fl_intensity == base + 20, powerd.fl_intensity)
+    advance(0.2)
+    check("box shown", boxText() == "Brightness " .. (base + 20) .. "%", boxText())
+    check("the lift is heard", list:lift() ~= "nobody")
+    check("and ends the slide", light_log[#light_log] == "resume-state")
+    advance(1.1); check("box goes away", not boxVisible())
+    down(RIGHT, 1000); list:slide(RIGHT, 990); list:slide(RIGHT, 990 - FULL * 0.3)
+    check("right edge is warmth", powerd:toNativeWarmth(powerd.fl_warmth) == 8, log())
+    local level = powerd.fl_intensity
+    check("a quick slide's closing swipe is kept from the Gestures plugin", list:flick() == true and powerd.fl_intensity == level)
+end
+do
+    local list = freshList("file browser: everything else is left to the list", W, true)
+    down(MIDDLE, 1000); list:slide(MIDDLE, 600)
+    check("a pan in the middle goes to the list as before", #light_log == 0 and menu_log[1] == "pan")
+    list:lift()
+    down(LEFT, 1000); list:slide(500, 1010)
+    check("so does a sideways one from the edge", #light_log == 0)
+    list:lift(); menu_log = {}
+    list:onPan(nil, { ges = "pan", mousewheel_direction = 1, direction = "north", pos = { x = LEFT, y = 500 } })
+    check("and a mouse wheel", menu_log[1] == "wheel" and #light_log == 0)
+end
+do
+    local list = freshList("History and other full-screen lists")
+    down(LEFT, 600)
+    list:slide(LEFT, 610, 0.001)
+    list:slide(LEFT, 610 + FULL * 0.2, 0.001)
+    check("sliding down dims", powerd.fl_intensity == 20, powerd.fl_intensity)
+    check("the swipe that ends a quick downward slide is kept", list:flick() == true)
+    check("so the list is not closed by it", menu_log[#menu_log] ~= "closed", table.concat(menu_log, ","))
+    down(LEFT, 600); list:slide(LEFT, 400); list:slide(LEFT, 500)
+    check("nor by an up-and-down slide", list:flick("multiswipe") == true and menu_log[#menu_log] ~= "closed")
+    down(LEFT, 1000); list:slide(LEFT, 800)
+    check("a slow slide's lift is heard by the list itself", list:lift() == "list" and light_log[#light_log] == "resume-state")
+    advance(1.1); check("box goes away", not boxVisible())
+    menu_log = {}
+    down(MIDDLE, 600); finger.y = 900
+    list:flick()
+    check("an ordinary downward swipe still closes the list", menu_log[1] == "closed")
+    down(LEFT, 600); finger.y = 900
+    list:flick()
+    check("even from the edge, if it was too quick to be a slide", menu_log[2] == "closed", table.concat(menu_log, ","))
+end
+do
+    local list = freshList("pop-up menu, narrower than the screen", W * 0.6)
+    down(LEFT, 1000); list:slide(LEFT, 700)
+    check("left alone", #light_log == 0 and menu_log[1] == "pan" and #shown == 0)
+end
+do
+    local list = freshList("a slide whose lift is never reported is wound up by itself")
+    down(LEFT, 1000); list:slide(LEFT, 800)
+    advance(4)
+    check("box still there while the finger might just be resting", boxVisible())
+    advance(2.5)
+    check("then the slide is closed and the box removed", not boxVisible() and light_log[#light_log] == "resume-state" and #tasks == 0, #tasks)
+    local level = powerd.fl_intensity
+    list:pan(LEFT, 790)
+    check("if the finger was resting after all, there is no jump when it moves again", powerd.fl_intensity == level, powerd.fl_intensity)
+    list:slide(LEFT, 790 - FULL * 0.1)
+    check("and it carries on from where it was", powerd.fl_intensity == level + 10, powerd.fl_intensity)
+    list:lift()
+end
+do
+    fresh("turned off in settings: lists behave exactly as before")
+    settings.livelight = { enabled = false }
+    menu_log = {}
+    local list = newList(W)
+    down(LEFT, 1000); list:slide(LEFT, 900)
+    check("pans go to the list", #light_log == 0 and menu_log[1] == "pan")
+    finger.y = 1300; list:flick()
+    check("swipes too", menu_log[#menu_log] == "closed")
 end
 
 print(failures == 0 and "\nALL PASSED" or ("\n" .. failures .. " FAILED"))
