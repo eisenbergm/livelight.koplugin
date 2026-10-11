@@ -1,0 +1,10 @@
+# This folder also holds other plugins. Only Live Light is tracked here;
+# everything else is ignored unless listed below.
+/*
+!/.gitignore
+!/livelight.koplugin/
+!/tests/
+/tests/*
+!/tests/run.js
+!/tests/livelight_harness.lua
+.DS_Store
