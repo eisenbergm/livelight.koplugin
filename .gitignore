@@ -1,14 +1,3 @@
-# This folder also holds other plugins. Only Live Light is tracked here;
-# everything else is ignored unless listed below.
-/*
-!/.gitignore
-!/README.md
-!/LICENSE
-!/package.json
-!/package-lock.json
-!/livelight.koplugin/
-!/tests/
-/tests/*
-!/tests/run.js
-!/tests/livelight_harness.lua
+node_modules/
+*.zip
 .DS_Store
