@@ -529,13 +529,13 @@ function LiveLight:addToMainMenu(menu_items)
         sorting_hint = "taps_and_gestures",
         sub_item_table = {
             {
-                text = _("Change the light while sliding along the screen edges"),
+                text = _("Enable Live Light"),
                 help_text = _("Slide a finger up or down the left edge for brightness, or the right edge for warmth. The light follows your finger as it moves. When this is off, the edges go back to whatever is set in the gesture manager."),
                 checked_func = function() return settings().enabled end,
                 callback = function() saveSetting("enabled", not settings().enabled) end,
             },
             {
-                text = _("Show the level while sliding"),
+                text = _("Show level while sliding"),
                 help_text = _("A small box near the top of the screen with the current brightness or warmth. It disappears a moment after you lift your finger."),
                 enabled_func = function() return settings().enabled end,
                 checked_func = function() return settings().show_level end,

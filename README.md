@@ -51,8 +51,8 @@ Put a finger on the left or right edge of the screen (the outer eighth) and slid
 
 Top menu → gear icon → **Taps and gestures** → **Live Light**:
 
-- **Change the light while sliding along the screen edges**: the main on/off switch.
-- **Show the level while sliding**: show or hide the box with the number.
+- **Enable Live Light**: the main on/off switch.
+- **Show level while sliding**: show or hide the box with the number.
 
 ## Where it works
 
