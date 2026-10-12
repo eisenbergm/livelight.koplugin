@@ -41,12 +41,20 @@ Put a finger on the left or right edge of the screen (the outer eighth) and slid
 - Sliding brightness all the way down turns the light off; sliding back up turns it on.
 - Once a slide has started, your finger can wander off the edge strip and it keeps working until you lift.
 
+> [!IMPORTANT]
+> **NOTE:** After you leave a book, this plug-in does not work on Bookshelf's shelf screens until the book is actually no longer in memory, which happens soon but not immediately. **THIS IS NOT IDEAL BUT IS NOT A BUG.**
+>
+> When you leave a book, Bookshelf actually keeps it open in the background for a while. During this time, Bookshelf disables certain features until the device has gone untouched for 30 to 40 seconds, or you open a different book. There are good reasons for this, but it has the side effect of making this plug-in not work during this period. The developer of Bookshelf could allow these swipes to go through during that time, but that's up to them.
+
+
 ### Settings
 
 Top menu → gear icon → Taps and gestures → Live Light:
 
 - **Enable Live Light**: the main on/off switch.
 - **Show level while sliding**: show or hide the box with the number.
+
+![Settings](images/settings.jpg)
 
 ## Where it works
 
@@ -57,11 +65,7 @@ Tested on the device:
 
 It deliberately stays out of full-screen viewers such as the image viewer.
 
-> [!IMPORTANT]
-> **NOTE:** After you leave a book, this plug-in does not work on the main Bookshelf screens right away until certain conditions are met. **THIS IS NOT IDEAL BUT IS NOT A BUG.**
->
-> When you leave a book, Bookshelf actually keeps it open in the background for a while. During this time, Bookshelf disables certain features until the device has gone untouched for 30 to 40 seconds, or you open a different book. There are good reasons for this, but it has the side effect of making this plug-in not work during this period. The developer of Bookshelf could allow these swipes to go through during that time, but that's up to them.
-
+And it has the limitation mentioned above about not working in Bookshelf's main shelf screens while a book is still in memory.
 
 ## Credits
 
