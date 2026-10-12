@@ -3,6 +3,9 @@
 /*
 !/.gitignore
 !/README.md
+!/LICENSE
+!/package.json
+!/package-lock.json
 !/livelight.koplugin/
 !/tests/
 /tests/*

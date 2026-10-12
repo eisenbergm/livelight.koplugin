@@ -14,11 +14,10 @@ People have been asking for this in KOReader for a long time ([#2096](https://gi
 
 ## Tested on
 
-| Device | KOReader | Result |
-|---|---|---|
-| Kobo Clara BW | <!-- TODO: your KOReader version --> | Works |
+Developed and tested on a **Kobo Clara BW**, which is the only device it has been tried on.
+<!-- TODO before publishing: add the KOReader version it was tested with. -->
 
-That is the only device it has been tried on. It should work on any touch device where KOReader can control the frontlight, but that is untested. KOReader's maintainers have noted that on some devices each light change takes long enough that live updating may feel sluggish. Reports from other devices are welcome.
+It should work on any touch device where KOReader can control the frontlight, but that is untested. KOReader's maintainers have noted that on some devices each light change takes long enough that live updating may feel sluggish. Reports from other devices are welcome.
 
 Devices without a warmth light get brightness on the left edge only; the right edge is left alone.
 
@@ -51,9 +50,9 @@ Top menu → gear icon → **Taps and gestures** → **Live Light**:
 
 ## Where it works
 
-- **While reading a book.** <!-- Confirmed on the Clara BW. -->
+- **While reading a book.**
 - **KOReader's file browser, History, Favorites, Collections** and other full-screen lists.
-- **[Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screens**, with one exception: after you leave a book, Bookshelf keeps it open underneath until the device has gone untouched for 30 to 40 seconds (or you open a different book), and until then the edges fall back to KOReader's normal swipe-then-jump behaviour. <!-- TODO: confirm on device before publishing. -->
+- **[Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screens**, with one exception: after you leave a book, Bookshelf keeps it open underneath until the device has gone untouched for 30 to 40 seconds (or you open a different book), and until then the edges fall back to KOReader's normal swipe-then-jump behaviour. Checked against Bookshelf 5.3.1.
 
 It deliberately stays out of pop-up menus, dialogs, and full-screen viewers such as the image viewer and book map, where dragging already means something else.
 
@@ -75,22 +74,30 @@ The light is changed through the same KOReader calls the built-in gesture and li
 
 ## Tests
 
-The plugin's logic is covered by an off-device simulation: a fake screen, a fake light, and a fake finger that produces the same events KOReader's gesture detector does. It runs under Node using [Fengari](https://fengari.io/), a Lua interpreter written in JavaScript.
+The plugin's logic is covered by an off-device simulation: a fake screen, a fake light, and a fake finger that produces the same events KOReader's gesture detector does. It runs under [Node.js](https://nodejs.org/) using [Fengari](https://fengari.io/), a Lua interpreter written in JavaScript.
 
 ```bash
-npm install fengari fengari-interop
+npm install
 ```
 
 ```bash
-node tests/run.js tests/livelight_harness.lua "$PWD/livelight.koplugin" "$PWD"
+npm test
 ```
 
 The simulation checks the logic, not the device: how the screen and light actually respond can only be judged on a real e-reader.
 
+To build the zip for a release:
+
+```bash
+zip -r -X livelight.koplugin.zip livelight.koplugin -x '*.DS_Store'
+```
+
 ## Credits
 
-<!-- TODO: author name, and whether to mention it was written with Claude. -->
+Written by David Friedman, working with [Claude](https://claude.com/claude-code), Anthropic's AI model.
+
+Thanks to the [KOReader](https://github.com/koreader/koreader) project, and to the people in the issues linked above who described what they wanted so clearly.
 
 ## Licence
 
-<!-- TODO: choose a licence and add a LICENSE file. KOReader itself is AGPL-3.0, and plugins conventionally match it. -->
+[AGPL-3.0](LICENSE), the same licence as KOReader.
