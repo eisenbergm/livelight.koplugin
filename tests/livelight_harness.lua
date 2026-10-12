@@ -437,7 +437,7 @@ do
     check("menu entry under Taps and gestures with two items", items.livelight.sorting_hint == "taps_and_gestures" and #sub == 2)
     check("both on by default", sub[1].checked_func() and sub[2].checked_func())
     sub[2].callback(); check("box toggle saved", settings.livelight.show_level == false); sub[2].callback()
-    sub[1].callback(); check("main toggle saved; box toggle greyed out with it", settings.livelight.enabled == false and sub[2].enabled_func() == false)
+    sub[1].callback(); check("main toggle saved; box toggle grayed out with it", settings.livelight.enabled == false and sub[2].enabled_func() == false)
     sub[1].callback(); check("and back on", settings.livelight.enabled == true and sub[2].enabled_func() == true)
 end
 
