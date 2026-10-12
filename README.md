@@ -59,7 +59,7 @@ It deliberately stays out of pop-up menus, dialogs, and full-screen viewers such
 
 ## Things to know
 
-- **The number looks rough while it is changing.** E-ink can only redraw quickly in pure black and white, with no grey to smooth the edges of text. Live Light uses that fast mode for the number while your finger is moving, then redraws it cleanly when you pause for a moment or lift. The word beside it is always drawn cleanly.
+- **The number looks rough.** E-ink can only redraw quickly in pure black and white, with no grey to smooth the edges of text. Live Light uses that fast mode for the box and its number, so they appear at once and keep up with your finger. The word beside the number is added a moment later in the normal, smooth mode.
 - **Screen corners.** A slide that starts in a top or bottom corner of an edge strip adjusts the light instead of opening KOReader's top or bottom menu. Swiping from the rest of the top or bottom edge still opens the menus. Corner taps and long-presses are not affected.
 - **A very fast flick** is applied in one step when you lift, since KOReader never reports it as a slide in progress. On list screens such as History, a fast downward flick from the edge still closes the list, as it does without this plugin.
 

@@ -100,7 +100,8 @@ local stubs = {
             dirty[#dirty + 1] = {
                 text = w and (w.name .. " " .. w.number.text), mode = mode, at = now,
                 -- which part of the screen: just the number, or the whole box
-                part = w and (region == w.number_slot.dimen and "number" or region == w.frame.dimen and "box" or "?") or "page",
+                part = w and (region == w.number_slot.dimen and "number" or region == w.word_slot.dimen and "word" or region == w.frame.dimen and "box" or "?") or "page",
+                word = w and w.word.text,
             }
         end,
     },
@@ -297,64 +298,56 @@ do
     check("counts up from zero, not from the remembered level", powerd.is_fl_on and powerd.fl_intensity == 25, log())
 end
 do
-    fresh("level box: live but not flooding the screen, cleaned up at the end")
+    fresh("level box: there at once, live but not flooding the screen")
     down(LEFT, 1000)
     slide(LEFT, 1000 - PAN_THRESHOLD - 1)
     check("box appears as soon as the slide is recognised, with the current level", boxText() == "Brightness 40%", boxText())
-    check("the box and its word are drawn once, cleanly", #dirty == 1 and dirty[1].mode == "ui" and dirty[1].part == "box", #dirty)
+    check("in the fast mode, and without its word yet", #dirty == 1 and dirty[1].mode == "fast" and dirty[1].part == "box" and dirty[1].word == "", #dirty)
     dirty = {}
     slide(LEFT, 1000 - PAN_THRESHOLD - FULL * 0.5, 0.01) -- 50 steps in about half a second
     check("light changed 50 times", powerd.fl_intensity == 90, powerd.fl_intensity)
-    check("box redrawn a handful of times, not 50", #dirty >= 2 and #dirty <= 5, #dirty)
-    local all_fast, rising, last = true, true, 40
+    local words, numbers, all_fast, rising, last = 0, 0, true, true, 40
     for _, d in ipairs(dirty) do
-        if d.mode ~= "fast" or d.part ~= "number" then all_fast = false end
-        local n = tonumber(d.text:match("(%d+)%%"))
-        if n < last then rising = false end
-        last = n
+        if d.part == "word" then
+            words = words + 1
+            if d.mode ~= "ui" or d.word ~= "Brightness" then words = -99 end
+        else
+            numbers = numbers + 1
+            if d.mode ~= "fast" or d.part ~= "number" then all_fast = false end
+            local n = tonumber(d.text:match("(%d+)%%"))
+            if n < last then rising = false end
+            last = n
+        end
     end
-    check("every redraw during the slide is fast and covers the number only, never the word", all_fast)
+    check("the word is added once, a moment later, in the smooth mode and by itself", words == 1, words)
+    check("number redrawn a handful of times, not 50", numbers >= 2 and numbers <= 5, numbers)
+    check("every one of those is fast and covers the number only", all_fast)
     check("the numbers shown climb with the finger", rising and last > 40, last)
     advance(0.2)
     check("when the finger pauses, the box catches up to the true level", boxText() == "Brightness 90%", boxText())
     dirty = {}
+    advance(3)
+    check("and is then left alone, however long the finger rests", #dirty == 0, #dirty)
     lift()
-    check("one clean redraw of the final number on lift", #dirty == 1 and dirty[1].mode == "ui" and dirty[1].part == "number" and dirty[1].text == "Brightness 90%", #dirty)
+    check("lifting redraws nothing when the number is already right", #dirty == 0, #dirty)
     advance(0.5)
     check("box still there half a second later", boxVisible())
     dirty = {}
     advance(0.6)
     check("then gone, and the page underneath redrawn cleanly", not boxVisible() and #dirty == 1 and dirty[1].mode == "ui" and dirty[1].part == "page")
     check("only one box was ever created", #shown == 1, #shown)
+    down(LEFT, 1000); slide(LEFT, 700, 0.001); dirty = {}; lift()
+    check("a lift that arrives before the last number was drawn draws it, fast", #dirty == 1 and dirty[1].mode == "fast" and dirty[1].part == "number" and dirty[1].text == boxText(), #dirty)
 end
 do
-    fresh("finger pauses mid-slide: the number is tidied up without lifting")
-    down(LEFT, 1000)
-    slide(LEFT, 1000 - PAN_THRESHOLD - 1)
+    fresh("a slide shorter than the wait for the word")
+    down(LEFT, 1000); slide(LEFT, 900, 0.0005); lift()
     dirty = {}
+    advance(0.2)
+    check("the word is still added while the box lingers", #dirty == 1 and dirty[1].part == "word" and dirty[1].mode == "ui", #dirty)
+    advance(1); dirty = {}
     advance(1)
-    check("a box that has only been drawn cleanly is not redrawn for nothing", #dirty == 0, #dirty)
-    slide(LEFT, 700)
-    local level = powerd.fl_intensity
-    dirty = {}
-    advance(0.1)
-    for _, d in ipairs(dirty) do if d.mode == "ui" then dirty.early = true end end
-    check("not yet, a tenth of a second in", not dirty.early)
-    advance(0.3)
-    for i = #dirty, 1, -1 do if dirty[i].mode == "fast" then table.remove(dirty, i) end end
-    check("after holding still, one clean redraw of the number alone", #dirty == 1 and dirty[1].mode == "ui" and dirty[1].part == "number" and dirty[1].text == "Brightness " .. level .. "%", #dirty)
-    advance(3)
-    check("and only one, however long the finger rests", #dirty == 1, #dirty)
-    dirty = {}
-    slide(LEFT, 600)
-    check("moving again goes back to fast redraws", #dirty >= 1 and dirty[1].mode == "fast", #dirty)
-    advance(0.5); dirty = {}
-    lift()
-    check("lifting after a pause does not redraw what is already clean", #dirty == 0, #dirty)
-    advance(1.1); check("box still goes away", not boxVisible())
-    down(LEFT, 1000); slide(LEFT, 800, 0.001); lift(); dirty = {}
-    advance(0.9)
-    check("no tidy-up left pending after a lift", #dirty == 0, #dirty)
+    check("and not after the box has gone", #dirty == 0 and #tasks == 0, #tasks)
 end
 do
     fresh("a second slide before the box has gone reuses it")
@@ -362,6 +355,7 @@ do
     advance(0.5)
     down(RIGHT, 1000); slide(RIGHT, 1000 - PAN_THRESHOLD - FULL * 0.1)
     advance(1.5)
+    check("the warmth box is sized for warmth's own top value, not brightness's", shown[2].widest_value == "10" and shown[1].widest_value == "100%", shown[2].widest_value)
     check("a fresh box replaces it, showing warmth, and stays while the slide is going", boxText() == "Warmth 6" and #shown == 2 and not shown[1].visible, boxText())
     lift(); advance(1.1)
     check("gone after that one ends", not boxVisible())

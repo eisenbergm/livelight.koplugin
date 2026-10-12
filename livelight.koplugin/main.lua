@@ -18,10 +18,10 @@ swallows every pan before any touch zone sees it (and does nothing with it,
 unless it came from a mouse wheel). So the plugin also wraps Menu's three
 gesture handlers, and offers each pan to the same code first.
 
-While sliding, a small box shows the level. Only the number in it is redrawn
-with the screen's fast black-and-white mode, a few times a second at most;
-the word beside it is drawn once, cleanly, and the number is redrawn cleanly
-whenever the finger pauses or lifts.
+While sliding, a small box shows the level. The box and its number are drawn
+in the screen's fast black-and-white mode, so they are there at once and keep
+up with the finger; the number is redrawn a few times a second at most. The
+word beside the number is added a moment later in the normal, smooth mode.
 ]]
 
 local Blitbuffer = require("ffi/blitbuffer")
@@ -61,9 +61,10 @@ local FULL_RANGE_TRAVEL = 0.7
 -- The light itself changes on every step; only the box is held back, so
 -- the e-ink screen is not asked to redraw faster than it can.
 local DRAW_INTERVAL = 0.15
--- How long the level must hold still, finger down, before the number is
--- redrawn cleanly.
-local SMOOTH_AFTER = 0.2
+-- How long after the box appears its word is added. Long enough that the two
+-- are separate screen updates: asked for together they would be merged into
+-- one slow, smooth update of the whole box.
+local WORD_AFTER = 0.1
 local HIDE_AFTER = 1
 -- A slide whose lift is never reported (a second finger joined, or the screen
 -- underneath changed) is wound up after this long without news of it.
@@ -134,16 +135,21 @@ local LevelBox = WidgetContainer:extend{
 
 function LevelBox:init()
     local face = Font:getFace("infofont")
-    -- The number sits in a slot of fixed width, so that it can be redrawn by
-    -- itself without the box or the word beside it ever changing.
-    local sample = TextWidget:new{ text = self.widest_value, face = face }
-    local slot = sample:getSize()
-    sample:free()
+    -- The word and the number each sit in a slot of fixed size, so that
+    -- either can be drawn by itself without anything else in the box moving.
+    local function slotFor(sample_text, widget)
+        local sample = TextWidget:new{ text = sample_text, face = face }
+        local size = sample:getSize()
+        sample:free()
+        return LeftContainer:new{
+            dimen = Geom:new{ w = size.w, h = size.h },
+            widget,
+        }
+    end
+    self.word = TextWidget:new{ text = "", face = face }
+    self.word_slot = slotFor(self.name, self.word)
     self.number = TextWidget:new{ text = self.value, face = face }
-    self.number_slot = LeftContainer:new{
-        dimen = Geom:new{ w = slot.w, h = slot.h },
-        self.number,
-    }
+    self.number_slot = slotFor(self.widest_value, self.number)
     self.frame = FrameContainer:new{
         background = Blitbuffer.COLOR_WHITE,
         bordersize = Size.border.window,
@@ -151,7 +157,7 @@ function LevelBox:init()
         margin = 0,
         padding = Size.padding.large,
         HorizontalGroup:new{
-            TextWidget:new{ text = self.name, face = face },
+            self.word_slot,
             HorizontalSpan:new{ width = Size.span.horizontal_default },
             self.number_slot,
         },
@@ -163,21 +169,33 @@ function LevelBox:init()
             self.frame,
         },
     }
+    self.add_word = function() self:addWord() end
 end
 
--- The fast mode is black and white only, which is what makes text drawn with
--- it look jagged. So it is used for the number alone, while it is changing.
-function LevelBox:redrawNumber(value, mode)
+-- The fast mode is black and white only, with no grey to smooth the edges of
+-- text, which is why the number looks rough. It is the price of keeping up.
+function LevelBox:redrawNumber(value)
     self.number:setText(value)
-    UIManager:setDirty(self, function() return mode, self.number_slot.dimen end)
+    UIManager:setDirty(self, function() return "fast", self.number_slot.dimen end)
+end
+
+-- The smooth mode only drives pixels whose content has changed since the last
+-- screen update. So the word cannot be drawn fast and then smoothed over
+-- (nothing would change, and nothing would happen); it has to be left out of
+-- the box's first, fast appearance and drawn for the first time here.
+function LevelBox:addWord()
+    self.word:setText(self.name)
+    UIManager:setDirty(self, function() return "ui", self.word_slot.dimen end)
 end
 
 function LevelBox:onShow()
-    UIManager:setDirty(self, function() return "ui", self.frame.dimen end)
+    UIManager:setDirty(self, function() return "fast", self.frame.dimen end)
+    UIManager:scheduleIn(WORD_AFTER, self.add_word)
     return true
 end
 
 function LevelBox:onCloseWidget()
+    UIManager:unschedule(self.add_word)
     UIManager:setDirty(nil, function() return "ui", self.frame.dimen end)
 end
 
@@ -187,10 +205,9 @@ end
 local slide = nil         -- { key, control, min, max, start, anchor_y, level }
 local passed_on = nil     -- key of a touch that was looked at and left to others
 local box = nil
-local box_name, box_value = nil, nil
+local box_name, box_value, box_widest = nil, nil, nil
 local draw_held = false   -- a redraw happened less than DRAW_INTERVAL ago
 local draw_wanted = false -- the level changed while redraws were held
-local number_rough = false -- the number on screen was last drawn in the fast mode
 
 local releaseDraw
 
@@ -201,7 +218,7 @@ local function hideBox()
     end
 end
 
-local function drawBox(mode)
+local function drawBox()
     if not (settings().show_level and box_name) then return end
     UIManager:unschedule(hideBox)
     if box and box.name ~= box_name then
@@ -209,38 +226,28 @@ local function drawBox(mode)
         hideBox()
     end
     if box then
-        box:redrawNumber(box_value, mode)
-        number_rough = mode == "fast"
+        box:redrawNumber(box_value)
     else
-        local powerd = Device:getPowerDevice()
         box = LevelBox:new{
             name = box_name,
             value = box_value,
-            widest_value = brightness.value(powerd, powerd.fl_max),
+            widest_value = box_widest,
         }
         UIManager:show(box)
-        number_rough = false
     end
 end
 
-local function smoothNumber()
-    if number_rough then drawBox("ui") end
-end
-
-local function drawBoxFast()
-    drawBox("fast")
+local function drawBoxHeld()
+    drawBox()
     draw_held = true
     UIManager:scheduleIn(DRAW_INTERVAL, releaseDraw)
-    -- Pushed back by every change, so it only runs once the level holds still.
-    UIManager:unschedule(smoothNumber)
-    UIManager:scheduleIn(SMOOTH_AFTER, smoothNumber)
 end
 
 releaseDraw = function()
     draw_held = false
     if draw_wanted then
         draw_wanted = false
-        drawBoxFast()
+        drawBoxHeld()
     end
 end
 
@@ -249,7 +256,7 @@ local function drawBoxSoon()
         draw_wanted = true
         return
     end
-    drawBoxFast()
+    drawBoxHeld()
 end
 
 local finish
@@ -270,6 +277,8 @@ local function begin(key, control, y)
         level = level,
     }
     box_name, box_value = control.name, control.value(powerd, level)
+    -- What the number's slot is sized for: this control's own top value.
+    box_widest = control.value(powerd, max)
     drawBoxSoon()
 end
 
@@ -300,12 +309,10 @@ finish = function()
     -- As KOReader's own gesture does, so waking from sleep restores this state.
     Device:getPowerDevice():updateResumeFrontlightState()
     UIManager:unschedule(releaseDraw)
-    UIManager:unschedule(smoothNumber)
     draw_held, draw_wanted = false, false
-    -- One clean redraw of the final number, clearing what the fast mode left,
-    -- unless a pause just before the lift has already done it.
-    if number_rough or not box or box.number.text ~= box_value then
-        drawBox("ui")
+    -- The last change may still have been waiting its turn to be drawn.
+    if not box or box.number.text ~= box_value then
+        drawBox()
     else
         UIManager:unschedule(hideBox)
     end
@@ -316,7 +323,6 @@ local function abandon()
     slide, passed_on = nil, nil
     UIManager:unschedule(finish)
     UIManager:unschedule(releaseDraw)
-    UIManager:unschedule(smoothNumber)
     UIManager:unschedule(hideBox)
     draw_held, draw_wanted = false, false
     hideBox()
