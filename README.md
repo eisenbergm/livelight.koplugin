@@ -50,9 +50,14 @@ Top menu → gear icon → **Taps and gestures** → **Live Light**:
 
 ## Where it works
 
+Tested on the device:
+
 - **While reading a book.**
-- **KOReader's file browser, History, Favorites, Collections** and other full-screen lists.
 - **[Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screens**, with one exception: after you leave a book, Bookshelf keeps it open underneath until the device has gone untouched for 30 to 40 seconds (or you open a different book), and until then the edges fall back to KOReader's normal swipe-then-jump behaviour. Checked against Bookshelf 5.3.1.
+
+Expected to work, but so far only checked in the simulated tests and not on a device:
+
+- **KOReader's own file browser, History, Favorites, Collections** and other full-screen lists.
 
 It deliberately stays out of pop-up menus, dialogs, and full-screen viewers such as the image viewer and book map, where dragging already means something else.
 
