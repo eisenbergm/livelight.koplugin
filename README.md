@@ -13,9 +13,6 @@ A KOReader plugin that makes the brightness and warmth edge swipes behave the wa
 
 Top row: a [Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screen. Bottom row: while reading.
 
-## What it does
-
-KOReader already lets you swipe the screen edges to change the light, but it waits for the whole swipe to finish and then jumps. You swipe, look, swipe again, look again. But on a Kobo running its stock software, the light changes in realtime as you drag your finger. This plugin brings that to KOReader.
 
 ## Tested on
 
@@ -61,7 +58,7 @@ Tested on the device:
 It deliberately stays out of full-screen viewers such as the image viewer.
 
 > [!IMPORTANT]
-> After you leave a book, this plug-in does not work on the main Bookshelf screens right away until certain conditions are met. **THIS IS NOT A BUG.**
+> **NOTE:** After you leave a book, this plug-in does not work on the main Bookshelf screens right away until certain conditions are met. **THIS IS NOT IDEAL BUT IS NOT A BUG.**
 >
 > When you leave a book, Bookshelf actually keeps it open in the background for a while. During this time, Bookshelf disables certain features until the device has gone untouched for 30 to 40 seconds, or you open a different book. There are good reasons for this, but it has the side effect of making this plug-in not work during this period. The developer of Bookshelf could allow these swipes to go through during that time, but that's up to them.
 
