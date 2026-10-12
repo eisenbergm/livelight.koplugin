@@ -172,7 +172,7 @@ function LevelBox:init()
     self.add_word = function() self:addWord() end
 end
 
--- The fast mode is black and white only, with no grey to smooth the edges of
+-- The fast mode is black and white only, with no gray to smooth the edges of
 -- text, which is why the number looks rough. It is the price of keeping up.
 function LevelBox:redrawNumber(value)
     self.number:setText(value)
@@ -461,11 +461,11 @@ function LiveLight:init()
     end
     -- Home-screen plugins that sit on top of the file browser (Bookshelf, for
     -- one) hand it only the touches they do not use themselves, and only for
-    -- zones they recognise as the file browser's, by this prefix. Without it
+    -- zones they recognize as the file browser's, by this prefix. Without it
     -- the zones below would never be offered anything while such a home
     -- screen is showing.
     local prefix = self.ui.document and "livelight_" or "filemanager_livelight_"
-    -- The zones cover the whole screen because a slide is recognised by where
+    -- The zones cover the whole screen because a slide is recognized by where
     -- it started, and must be followed wherever the finger wanders after.
     self.ui:registerTouchZones({
         {

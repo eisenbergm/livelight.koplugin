@@ -44,7 +44,7 @@ Put a finger on the left or right edge of the screen (the outer eighth) and slid
 > [!IMPORTANT]
 > **NOTE:** After you leave a book, this plug-in does not work on Bookshelf's shelf screens until the book is actually no longer in memory, which happens soon but not immediately. **THIS IS NOT IDEAL BUT IS NOT A BUG.**
 >
-> When you leave a book, Bookshelf actually keeps it open in the background for a while. During this time, Bookshelf disables certain features until the device has gone untouched for 30 to 40 seconds, or you open a different book. There are good reasons for this, but it has the side effect of making this plug-in not work during this period. The developer of Bookshelf could allow these swipes to go through during that time, but that's up to them.
+> When you leave a book, Bookshelf actually keeps it open in the background for a while. During this time, Bookshelf disables certain features until the device has gone untouched for 30 to 40 seconds, or you open a different book. There are good reasons for this, but it has the side effect of making this plug-in not work during this period. Bookshelf would need to be modified to allow these swipes through while a book is in memory.
 
 
 ### Settings
@@ -71,6 +71,6 @@ And it has the limitation mentioned above about not working in Bookshelf's main 
 
 Written by David Friedman, working with [Claude](https://claude.com/claude-code), Anthropic's AI model.
 
-## Licence
+## License
 
-[AGPL-3.0](LICENSE), the same licence as KOReader.
+[AGPL-3.0](LICENSE), the same license as KOReader.

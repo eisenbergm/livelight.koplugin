@@ -210,7 +210,7 @@ do
     check("small wobble under the pan threshold does nothing", to(LEFT, 960) == nil and #light_log == 0)
     local kept = slide(LEFT, 1000 - PAN_THRESHOLD - 1)
     check("the plugin keeps the slide", kept == true)
-    check("no jump at the moment the slide is recognised", powerd.fl_intensity == 40, powerd.fl_intensity)
+    check("no jump at the moment the slide is recognized", powerd.fl_intensity == 40, powerd.fl_intensity)
     slide(LEFT, 1000 - PAN_THRESHOLD - FULL * 0.2)
     check("a fifth of the travel is +20, set while the finger is still down", powerd.fl_intensity == 60, powerd.fl_intensity)
     local steps = 0
@@ -251,7 +251,7 @@ do
     fresh("sideways from the left edge (a page turn) is left alone")
     down(LEFT, 800)
     check("pan passed on", slide(500, 810) == false)
-    check("still passed on if it turns vertical afterwards", slide(500, 400) == false)
+    check("still passed on if it turns vertical afterward", slide(500, 400) == false)
     check("swipe passed on", flick() == false)
     check("light untouched, nothing drawn", #light_log == 0 and #shown == 0)
     down(LEFT, 800)
@@ -301,7 +301,7 @@ do
     fresh("level box: there at once, live but not flooding the screen")
     down(LEFT, 1000)
     slide(LEFT, 1000 - PAN_THRESHOLD - 1)
-    check("box appears as soon as the slide is recognised, with the current level", boxText() == "Brightness 40%", boxText())
+    check("box appears as soon as the slide is recognized, with the current level", boxText() == "Brightness 40%", boxText())
     check("in the fast mode, and without its word yet", #dirty == 1 and dirty[1].mode == "fast" and dirty[1].part == "box" and dirty[1].word == "", #dirty)
     dirty = {}
     slide(LEFT, 1000 - PAN_THRESHOLD - FULL * 0.5, 0.01) -- 50 steps in about half a second
