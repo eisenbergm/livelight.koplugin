@@ -1,3 +1,7 @@
 node_modules/
 *.zip
 .DS_Store
+# Phone videos carry the location they were filmed at.
+*.mov
+*.MOV
+*.mp4

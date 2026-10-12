@@ -6,6 +6,13 @@ A KOReader plugin that makes the brightness and warmth edge swipes behave the wa
 - Slide up or down the **right edge** for warmth.
 - A small box shows the level as you go.
 
+| Brightness | Warmth |
+|:---:|:---:|
+| ![Sliding up the left edge of a home screen raises the brightness](images/brightness-home.gif) | ![Sliding along the right edge of a home screen changes the warmth](images/warmth-home.gif) |
+| ![Sliding along the left edge of a book page changes the brightness](images/brightness-book.gif) | ![Sliding along the right edge of a book page changes the warmth](images/warmth-book.gif) |
+
+Top row: a [Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screen. Bottom row: while reading.
+
 ## Why
 
 KOReader already lets you swipe the screen edges to change the light, but it waits for the whole swipe to finish, measures it, and then jumps. You swipe, look, swipe again, look again. On a Kobo running its stock software, the light simply follows your finger. This plugin brings that back.
@@ -14,8 +21,7 @@ People have been asking for this in KOReader for a long time ([#2096](https://gi
 
 ## Tested on
 
-Developed and tested on a **Kobo Clara BW**, which is the only device it has been tried on.
-<!-- TODO before publishing: add the KOReader version it was tested with. -->
+Developed and tested on a **Kobo Clara BW** running **KOReader 2026.07.02**, which is the only setup it has been tried on.
 
 It should work on any touch device where KOReader can control the frontlight, but that is untested. KOReader's maintainers have noted that on some devices each light change takes long enough that live updating may feel sluggish. Reports from other devices are welcome.
 
