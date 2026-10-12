@@ -2,6 +2,7 @@
 # everything else is ignored unless listed below.
 /*
 !/.gitignore
+!/README.md
 !/livelight.koplugin/
 !/tests/
 /tests/*

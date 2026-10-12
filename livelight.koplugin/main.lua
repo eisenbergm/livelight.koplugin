@@ -453,11 +453,17 @@ function LiveLight:init()
         end
         return ids
     end
+    -- Home-screen plugins that sit on top of the file browser (Bookshelf, for
+    -- one) hand it only the touches they do not use themselves, and only for
+    -- zones they recognise as the file browser's, by this prefix. Without it
+    -- the zones below would never be offered anything while such a home
+    -- screen is showing.
+    local prefix = self.ui.document and "livelight_" or "filemanager_livelight_"
     -- The zones cover the whole screen because a slide is recognised by where
     -- it started, and must be followed wherever the finger wanders after.
     self.ui:registerTouchZones({
         {
-            id = "livelight_pan",
+            id = prefix .. "pan",
             ges = "pan",
             screen_zone = everywhere,
             overrides = ahead_of({
@@ -471,7 +477,7 @@ function LiveLight:init()
             handler = onPan,
         },
         {
-            id = "livelight_pan_release",
+            id = prefix .. "pan_release",
             ges = "pan_release",
             screen_zone = everywhere,
             overrides = ahead_of({
@@ -481,7 +487,7 @@ function LiveLight:init()
             handler = onPanRelease,
         },
         {
-            id = "livelight_swipe",
+            id = prefix .. "swipe",
             ges = "swipe",
             screen_zone = everywhere,
             overrides = ahead_of({
@@ -498,7 +504,7 @@ function LiveLight:init()
             handler = onSwipe,
         },
         {
-            id = "livelight_multiswipe",
+            id = prefix .. "multiswipe",
             ges = "multiswipe",
             screen_zone = everywhere,
             overrides = { "multiswipe" },

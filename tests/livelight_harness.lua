@@ -125,9 +125,10 @@ local L = dofile(PLUGIN .. "/main.lua")
 
 -- The plugin's zones, as registered on a fake reader.
 local zones, zone_order = {}, {}
-local function newPlugin()
+local function newPlugin(document)
     zones, zone_order = {}, {}
     return L:new{ ui = {
+        document = document,
         menu = { registerToMainMenu = function() end },
         registerTouchZones = function(_, list)
             for _, z in ipairs(list) do zones[z.ges] = z; zone_order[#zone_order + 1] = z.id end
@@ -419,6 +420,16 @@ do
     fresh("zones and menu")
     local function has(list, id) for _, v in ipairs(list) do if v == id then return true end end return false end
     check("four zones registered", #zone_order == 4, table.concat(zone_order, ","))
+    -- Bookshelf's rule for which of the file browser's zones it will offer a touch to.
+    local function bookshelfAllows(id) return id:find("^filemanager_") ~= nil end
+    local allowed = 0
+    for _, id in ipairs(zone_order) do if bookshelfAllows(id) then allowed = allowed + 1 end end
+    check("in the file browser, all four are named so that a home screen on top passes touches to them", allowed == 4, table.concat(zone_order, ","))
+    newPlugin({})
+    allowed = 0
+    for _, id in ipairs(zone_order) do if bookshelfAllows(id) or id:find("^readermenu_") then allowed = allowed + 1 end end
+    check("in a book they keep their own names", allowed == 0 and #zone_order == 4, table.concat(zone_order, ","))
+    plugin = newPlugin()
     check("all cover the whole screen", zones.pan.screen_zone.ratio_w == 1 and zones.swipe.screen_zone.ratio_h == 1)
     check("pan is ahead of the reader's page and scroll pans", has(zones.pan.overrides, "paging_pan") and has(zones.pan.overrides, "rolling_pan"))
     check("swipe is ahead of the Gestures plugin's four edge swipes",
