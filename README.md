@@ -13,19 +13,17 @@ A KOReader plugin that makes the brightness and warmth edge swipes behave the wa
 
 Top row: a [Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screen. Bottom row: while reading.
 
-## Why
+## What it does
 
-KOReader already lets you swipe the screen edges to change the light, but it waits for the whole swipe to finish, measures it, and then jumps. You swipe, look, swipe again, look again. On a Kobo running its stock software, the light simply follows your finger. This plugin brings that back.
-
-People have been asking for this in KOReader for a long time ([#2096](https://github.com/koreader/koreader/issues/2096), [#5313](https://github.com/koreader/koreader/issues/5313), [#14498](https://github.com/koreader/koreader/issues/14498)).
+KOReader already lets you swipe the screen edges to change the light, but it waits for the whole swipe to finish and then jumps. You swipe, look, swipe again, look again. But on a Kobo running its stock software, the light changes in realtime as you drag your finger. This plugin brings that to KOReader.
 
 ## Tested on
 
 Developed and tested on a **Kobo Clara BW** running **KOReader 2026.07.02**, which is the only setup it has been tried on.
 
-It should work on any touch device where KOReader can control the frontlight, but that is untested. KOReader's maintainers have noted that on some devices each light change takes long enough that live updating may feel sluggish. Reports from other devices are welcome.
+It should theoretically work on any touch device where KOReader can control the frontlight, but that is untested. Reports from other devices are welcome.
 
-Devices without a warmth light get brightness on the left edge only; the right edge is left alone.
+Devices without a warmth light get brightness on the left edge only. The right edge is left alone.
 
 ## Install
 
@@ -34,22 +32,21 @@ Devices without a warmth light get brightness on the left edge only; the right e
 3. Copy the `livelight.koplugin` folder into KOReader's `plugins` folder. On a Kobo that is `.adds/koreader/plugins/`. The `.adds` folder is hidden: on a Mac, press **Cmd+Shift+.** in Finder to show it.
 4. Eject the device and restart KOReader.
 
-You do not need to change any gesture settings. Live Light takes priority over KOReader's built-in edge swipes while it is switched on, and hands the edges back when it is switched off.
+If you already have edge-swipe settings set up, you do not need to change or disable them. Live Light takes priority over KOReader's built-in edge swipes while it is switched on, and hands the edges back when it is switched off.
 
-To update, copy the new folder over the old one and restart KOReader. To uninstall, delete the folder.
+To uninstall, delete the folder.
 
 ## Using it
 
-Put a finger on the left or right edge of the screen (the outer eighth) and slide up or down. Start moving straight away: if you rest your finger for about half a second first, KOReader treats it as a long-press.
+Put a finger on the left or right edge of the screen (the outer eighth) and slide up or down. Start moving right away. If you rest your finger for about half a second, KOReader treats it as a long-press.
 
 - About 70% of the screen height covers the full range.
 - Sliding brightness all the way down turns the light off; sliding back up turns it on.
-- Warmth moves in the device's own steps (0 to 10 on a Clara BW), so it changes in notches.
 - Once a slide has started, your finger can wander off the edge strip and it keeps working until you lift.
 
 ### Settings
 
-Top menu → gear icon → **Taps and gestures** → **Live Light**:
+Top menu → gear icon → Taps and gestures → Live Light:
 
 - **Enable Live Light**: the main on/off switch.
 - **Show level while sliding**: show or hide the box with the number.
@@ -59,55 +56,19 @@ Top menu → gear icon → **Taps and gestures** → **Live Light**:
 Tested on the device:
 
 - **While reading a book.**
-- **[Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screens**, with one exception: after you leave a book, Bookshelf keeps it open underneath until the device has gone untouched for 30 to 40 seconds (or you open a different book), and until then the edges fall back to KOReader's normal swipe-then-jump behaviour. Checked against Bookshelf 5.3.1.
+- **[Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) home screens**.
 
-Expected to work, but so far only checked in the simulated tests and not on a device:
+It deliberately stays out of full-screen viewers such as the image viewer.
 
-- **KOReader's own file browser, History, Favorites, Collections** and other full-screen lists.
+> [!IMPORTANT]
+> After you leave a book, this plug-in does not work on the main Bookshelf screens right away until certain conditions are met. **THIS IS NOT A BUG.**
+>
+> When you leave a book, Bookshelf actually keeps it open in the background for a while. During this time, Bookshelf disables certain features until the device has gone untouched for 30 to 40 seconds, or you open a different book. There are good reasons for this, but it has the side effect of making this plug-in not work during this period. The developer of Bookshelf could allow these swipes to go through during that time, but that's up to them.
 
-It deliberately stays out of pop-up menus, dialogs, and full-screen viewers such as the image viewer and book map, where dragging already means something else.
-
-## Things to know
-
-- **The number looks rough.** E-ink can only redraw quickly in pure black and white, with no grey to smooth the edges of text. Live Light uses that fast mode for the box and its number, so they appear at once and keep up with your finger. The word beside the number is added a moment later in the normal, smooth mode.
-- **Screen corners.** A slide that starts in a top or bottom corner of an edge strip adjusts the light instead of opening KOReader's top or bottom menu. Swiping from the rest of the top or bottom edge still opens the menus. Corner taps and long-presses are not affected.
-- **A very fast flick** is applied in one step when you lift, since KOReader never reports it as a slide in progress. On list screens such as History, a fast downward flick from the edge still closes the list, as it does without this plugin.
-
-## How it works
-
-KOReader reports a completed swipe only when the finger lifts, but it also sends a stream of "pan" events while the finger is moving. Live Light listens to those and sets the light on each one.
-
-- **In a book**, it registers touch zones through KOReader's standard mechanism, ordered ahead of the reader's own zones and the Gestures plugin's edge swipes. Nothing in the Gestures plugin is modified.
-- **On list screens**, KOReader's `Menu` widget consumes every pan before any touch zone sees it. So the plugin wraps three of `Menu`'s gesture handlers at runtime and gets first look at each pan, passing on anything that is not an edge slide. No KOReader files are changed on disk, but this part depends on KOReader internals and could be broken by a future KOReader update.
-- **Under Bookshelf**, the file-browser zones carry a `filemanager_` prefix, which is how Bookshelf decides which touches to pass down to the file browser underneath it.
-
-The light is changed through the same KOReader calls the built-in gesture and light dialog use.
-
-## Tests
-
-The plugin's logic is covered by an off-device simulation: a fake screen, a fake light, and a fake finger that produces the same events KOReader's gesture detector does. It runs under [Node.js](https://nodejs.org/) using [Fengari](https://fengari.io/), a Lua interpreter written in JavaScript.
-
-```bash
-npm install
-```
-
-```bash
-npm test
-```
-
-The simulation checks the logic, not the device: how the screen and light actually respond can only be judged on a real e-reader.
-
-To build the zip for a release:
-
-```bash
-zip -r -X livelight.koplugin.zip livelight.koplugin -x '*.DS_Store'
-```
 
 ## Credits
 
 Written by David Friedman, working with [Claude](https://claude.com/claude-code), Anthropic's AI model.
-
-Thanks to the [KOReader](https://github.com/koreader/koreader) project, and to the people in the issues linked above who described what they wanted so clearly.
 
 ## Licence
 
